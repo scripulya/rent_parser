@@ -22,6 +22,10 @@ class EstonianRentVisualizationPipeline:
 
     def process_item(self, item, spider):
         address = item.get('address', 'No address')
+        price = item.get('price', 'No price found')
+        link = item.get('link', 'No resource link found')
+        columns = "(address, price, resource_link)"
         self.cursor.execute(
-            'insert into real_estates (address) values (%s);', (address,))
+            f'insert into real_estates {columns} values (%s, %s, %s);',
+            (address, price, link))
         self.connection.commit()

@@ -1,5 +1,8 @@
+import logging
+
 import requests
 import psycopg2
+from tqdm import tqdm
 
 from credentials import (
     DB_CREDENTIALS,
@@ -7,6 +10,9 @@ from credentials import (
     HERE_CLIENT_ID,
     HERE_CLIENT_SECRET,
     HERE_GRANT_TYPE)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 connection = psycopg2.connect(**DB_CREDENTIALS)
 cursor = connection.cursor()
@@ -29,23 +35,23 @@ headers = {
 
 def geocode_addresses():
     locations = []
-    for i, address in enumerate(addresses):
+    logger.info("Geocoding process started")
+    for i, address in enumerate(tqdm(addresses)):
         address = address[0]
-        print(f"Address is: {address}")
         params = {'q': address}
         response = requests.get(
             HERE_URL, headers=headers,
             data=basic_form, params=params)
 
         response = response.json()
-        locations.append(response['items'])
+        locations.append((response['items'], address))
     return locations
 
 
 def update_addresses_with_coords(locations_collections):
-    for collection in locations_collections:
+    for collection, address in tqdm(locations_collections):
         if collection != []:
-            address = collection['label']
+            logger.info(address)
             collection = sorted(
                 collection,
                 key=lambda x: x['scoring']['queryScore'],
@@ -53,7 +59,7 @@ def update_addresses_with_coords(locations_collections):
             collection = collection[0]
             lat = collection['position']['lat']
             lng = collection['position']['lng']
-            print({'lng': lng, 'lat': lat})
+            logger.info({'lng': lng, 'lat': lat})
             point = f"ST_GeomFromText('POINT({lng} {lat})', 4326)"
             condition = f"WHERE address = '{address}'"
             cursor.execute(f"UPDATE real_estates SET coords = {point} {condition};")

@@ -15,7 +15,6 @@ class EstonianRentVisualizationSpiderMiddleware:
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
 
-    
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
 
